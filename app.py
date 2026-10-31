@@ -11,28 +11,34 @@ st.set_page_config(
 st.title("🤖 NEXORA AI")
 st.caption("Your Intelligent AI Assistant")
 
+# Connect AI
 try:
-    client = genai.Client(
-        api_key=st.secrets["GEMINI_API_KEY"]
-    )
-except Exception:
-    st.error("AI connection setup issue. Check your API key in Streamlit Secrets.")
+    api_key = st.secrets["GEMINI_API_KEY"]
+    client = genai.Client(api_key=api_key)
+
+except Exception as e:
+    st.error("AI Connection Failed")
+    st.code(f"{type(e).__name__}: {e}")
     st.stop()
 
+# Chat history
 if "messages" not in st.session_state:
     st.session_state.messages = []
 
 with st.sidebar:
     st.title("NEXORA")
     st.write("Your personal AI assistant.")
+
     if st.button("🗑️ Clear Chat"):
         st.session_state.messages = []
         st.rerun()
 
+# Display previous messages
 for message in st.session_state.messages:
     with st.chat_message(message["role"]):
         st.markdown(message["content"])
 
+# User input
 prompt = st.chat_input("Ask NEXORA anything...")
 
 if prompt:
@@ -51,9 +57,14 @@ if prompt:
                     model="gemini-2.5-flash",
                     contents=prompt
                 )
-                answer = response.text or "I couldn't generate a response."
-            except Exception:
-                answer = "Sorry, something went wrong. Please check your API quota and connection."
+
+                answer = response.text or "No response was generated."
+
+            except Exception as e:
+                answer = (
+                    f"API Error: {type(e).__name__}\n\n"
+                    f"Details: {e}"
+                )
 
             st.markdown(answer)
 
@@ -61,3 +72,4 @@ if prompt:
         "role": "assistant",
         "content": answer
     })
+    
