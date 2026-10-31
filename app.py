@@ -57,7 +57,7 @@ if prompt:
             try:
                 with st.spinner("NEXORA is thinking..."):
                     chat = client.chat.completions.create(
-                        model="llama-3.3-70b-versatile",
+                        model="openai/gpt-oss-120b",
                         messages=[
                             {
                                 "role": "system",
