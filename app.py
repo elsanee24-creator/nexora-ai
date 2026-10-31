@@ -1,5 +1,6 @@
 
 import streamlit as st
+import time
 from google import genai
 
 st.set_page_config(
@@ -51,22 +52,40 @@ if prompt:
         st.markdown(prompt)
 
     with st.chat_message("assistant"):
-        with st.spinner("NEXORA is thinking..."):
+        answer = None
+
+        for attempt in range(3):
             try:
-                response = client.models.generate_content(
-                    model="gemini-3.8-flash",
-                    contents=prompt
-                )
+                with st.spinner(
+                    f"NEXORA is thinking... Attempt {attempt + 1}/3"
+                ):
+                    response = client.models.generate_content(
+                        model="gemini-3.8-flash",
+                        contents=prompt
+                    )
 
                 answer = response.text or "No response was generated."
+                break
 
             except Exception as e:
-                answer = (
-                    f"API Error: {type(e).__name__}\n\n"
-                    f"Details: {e}"
-                )
+                error = str(e)
 
-            st.markdown(answer)
+                if "503" in error or "UNAVAILABLE" in error:
+                    if attempt < 2:
+                        time.sleep(2 ** (attempt + 1))
+                    else:
+                        answer = (
+                            "Gemini server is still busy. "
+                            "Please try again in a few minutes."
+                        )
+                else:
+                    answer = (
+                        f"API Error: {type(e).__name__}\n\n"
+                        f"Details: {e}"
+                    )
+                    break
+
+        st.markdown(answer)
 
     st.session_state.messages.append({
         "role": "assistant",
