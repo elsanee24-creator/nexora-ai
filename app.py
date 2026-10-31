@@ -1,7 +1,7 @@
 
 import streamlit as st
 import time
-from google import genai
+from groq import Groq
 
 st.set_page_config(
     page_title="NEXORA AI",
@@ -12,11 +12,10 @@ st.set_page_config(
 st.title("🤖 NEXORA AI")
 st.caption("Your Intelligent AI Assistant")
 
-# Connect AI
+# Connect Groq
 try:
-    api_key = st.secrets["GEMINI_API_KEY"]
-    client = genai.Client(api_key=api_key)
-
+    api_key = st.secrets["GROQ_API_KEY"]
+    client = Groq(api_key=api_key)
 except Exception as e:
     st.error("AI Connection Failed")
     st.code(f"{type(e).__name__}: {e}")
@@ -34,7 +33,7 @@ with st.sidebar:
         st.session_state.messages = []
         st.rerun()
 
-# Display previous messages
+# Display chat history
 for message in st.session_state.messages:
     with st.chat_message(message["role"]):
         st.markdown(message["content"])
@@ -56,34 +55,28 @@ if prompt:
 
         for attempt in range(3):
             try:
-                with st.spinner(
-                    f"NEXORA is thinking... Attempt {attempt + 1}/3"
-                ):
-                    response = client.models.generate_content(
-                        model="gemini-3.8-flash",
-                        contents=prompt
+                with st.spinner("NEXORA is thinking..."):
+                    chat = client.chat.completions.create(
+                        model="llama-3.3-70b-versatile",
+                        messages=[
+                            {
+                                "role": "system",
+                                "content": "You are NEXORA AI, a helpful and intelligent AI assistant."
+                            }
+                        ] + st.session_state.messages
                     )
 
-                answer = response.text or "No response was generated."
+                answer = chat.choices[0].message.content
                 break
 
             except Exception as e:
-                error = str(e)
-
-                if "503" in error or "UNAVAILABLE" in error:
-                    if attempt < 2:
-                        time.sleep(2 ** (attempt + 1))
-                    else:
-                        answer = (
-                            "Gemini server is still busy. "
-                            "Please try again in a few minutes."
-                        )
+                if attempt < 2:
+                    time.sleep(2 ** (attempt + 1))
                 else:
                     answer = (
                         f"API Error: {type(e).__name__}\n\n"
                         f"Details: {e}"
                     )
-                    break
 
         st.markdown(answer)
 
