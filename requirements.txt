@@ -1,4 +1,7 @@
-streamlit>=1.63.0
+
+streamlit
 groq
-pypdf
+python-dotenv
+requests
 Pillow
+
